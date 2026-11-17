@@ -1,5 +1,5 @@
-import { assertEquals } from "@std/assert";
-import { Session } from "./session.ts";
+import { assertEquals, assertStrictEquals } from "@std/assert";
+import { Session, startLevel } from "./session.ts";
 import { LEVELS } from "./levels.ts";
 import { isSolved } from "./puzzle.ts";
 import { replayAll, replayScript } from "./replay.ts";
@@ -25,10 +25,9 @@ Deno.test("an unsubscribed listener hears nothing more", () => {
 
 Deno.test("restart returns to the level's starting position", () => {
   const session = new Session();
-  const start = session.getState();
   session.dispatch({ kind: "move", direction: "right" });
   session.dispatch({ kind: "restart" });
-  assertEquals(session.getState(), start);
+  assertEquals(session.getState(), startLevel(0));
 });
 
 Deno.test("every level's par route solves it", () => {
@@ -37,8 +36,29 @@ Deno.test("every level's par route solves it", () => {
     for (const command of commands) session.dispatch(command);
     const { puzzle } = session.getState();
     assertEquals(isSolved(puzzle), true, LEVELS[index].name);
-    assertEquals(puzzle.moves, LEVELS[index].par.length, LEVELS[index].name);
+    assertEquals(
+      puzzle.moves,
+      LEVELS[index].par.length,
+      LEVELS[index].name,
+    );
   });
+});
+
+Deno.test("undo brings back the very puzzle from before the last move", () => {
+  const session = new Session();
+  session.dispatch({ kind: "move", direction: "right" });
+  const before = session.getState().puzzle;
+  session.dispatch({ kind: "move", direction: "right" });
+  session.dispatch({ kind: "undo" });
+  assertStrictEquals(session.getState().puzzle, before);
+});
+
+Deno.test("undo with nothing to undo notifies no subscriber", () => {
+  const session = new Session();
+  let heard = 0;
+  session.subscribe(() => heard++);
+  session.dispatch({ kind: "undo" });
+  assertEquals(heard, 0);
 });
 
 Deno.test("the replay line", () => {
