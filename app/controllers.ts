@@ -1,4 +1,5 @@
 import type { Command, Session } from "../core/mod.ts";
+import { clickToMove } from "./clickToMove.ts";
 import type { BoardInput } from "./tileClicks.ts";
 import { replay } from "./replay.ts";
 
@@ -40,7 +41,7 @@ const keyboard: Controller = {
   },
 };
 
-export const CONTROLLERS = { keyboard, replay };
+export const CONTROLLERS = { keyboard, clickToMove, replay };
 
 export type ControllerName = keyof typeof CONTROLLERS;
 
